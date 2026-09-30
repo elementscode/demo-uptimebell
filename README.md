@@ -1,12 +1,12 @@
-![POSTER_ALT](POSTER_URL)
+![Uptimebell, an uptime monitor built with Elements: the Northwind dashboard with response time charts and uptime for 24 hours, 7 days and 90 days, a Payments monitor down with HTTP 404, and the incident list with an identified incident and past resolved ones.](https://elements.dev/demos/01a0f41f-a528-7e3d-97cb-02e9e521529d/poster?v=4ceaaa864869)
 
 # Uptimebell
 
 > A demo app built with [Elements](https://elements.dev).
 
-Checks your sites every minute, opens an incident after three failures, charts response time and uptime, and runs a status page that emails subscribers.
+Checks your sites every minute, opens an incident after three failures, and runs a status page that emails subscribers.
 
-**Demo:** [Uptimebell](TBD)
+**Demo:** [Uptimebell](https://elements.dev/demos/01a0f41f-a528-7e3d-97cb-02e9e521529d)
 
 ## Agent specs
 
