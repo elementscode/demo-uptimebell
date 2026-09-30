@@ -1,0 +1,67 @@
+@import "#app/shared/styles/page.css";
+
+.auth {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-10) var(--space-5);
+  background: var(--bg-soft);
+}
+
+.auth-column {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.auth-intro {
+  text-align: center;
+}
+
+.auth-intro p {
+  color: var(--ink-soft);
+}
+
+.auth .error {
+  color: var(--danger-ink);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-edge);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.demo-logins h2 {
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+
+.demo-login {
+  justify-content: space-between;
+  height: auto;
+  padding-block: var(--space-3);
+  width: 100%;
+  text-align: start;
+}
+
+.demo-login-text {
+  display: grid;
+  gap: 2px;
+}
+
+.demo-login-text strong {
+  font-weight: var(--weight-semibold);
+}
+
+.demo-login-text span {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+}

@@ -1,0 +1,22 @@
+@import "#app/shared/styles/email.css";
+
+.email.incident-opened .badge {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fdecec;
+  color: #a4161a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.email.incident-opened .cta {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: #1c64b8;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}

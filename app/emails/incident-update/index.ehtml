@@ -1,0 +1,33 @@
+import "./style.css";
+
+/**
+ * Sent to each status page subscriber when the account posts an update.
+ *
+ * @email
+ */
+<html (
+  accountName: string,
+  slug: string,
+  title: string,
+  status: string,
+  body: string,
+  postedAt: Date,
+  token: string,
+)>
+  <body class="email incident-update">
+    <div class="email-wrap">
+      <p class={["badge", `is-${status}`]}>{status}</p>
+      <h1>{title}</h1>
+      <p>{body}</p>
+      <p class="meta">Posted {postedAt.toUTCString()}</p>
+      <p><a href={`/status/${slug}`}>View the {accountName} status page</a></p>
+
+      <div class="email-footer">
+        <p>
+          You subscribed to updates from {accountName}.
+          <a href={`/unsubscribe/${token}`}>Unsubscribe</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+@import "#app/shared/styles/page.css";
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.timeline-item p {
+  margin: 0;
+}
+
+.timeline-status {
+  font-weight: var(--weight-semibold);
+  text-transform: capitalize;
+}
+
+.timeline-status.is-investigating {
+  color: var(--danger-ink);
+}
+
+.timeline-status.is-identified {
+  color: var(--warning-ink);
+}
+
+.timeline-status.is-resolved {
+  color: var(--success-ink);
+}
+
+.timeline-time {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+}
+
+@media (max-width: 30rem) {
+  .timeline-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}

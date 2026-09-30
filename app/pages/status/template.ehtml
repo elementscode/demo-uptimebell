@@ -1,0 +1,274 @@
+import "./style.css";
+import type { Listener } from "@elements/app";
+import { AccountEvent } from "#app/shared/services/events";
+import { Incident } from "#app/shared/services/incidents";
+import { StatusAccount, StatusComponent, DayBar, fetchComponent, fetchComponents, fetchPublicIncidents, subscribe } from "#app/shared/services/status-page";
+import { Brand } from "#app/shared/templates/layout";
+import { IncidentPill, Timeline } from "#app/shared/templates/timeline";
+import { formatUptime, formatDateTime, formatDuration } from "#app/shared/format";
+
+interface State {
+  components: StatusComponent[];
+  incidents: Incident[];
+  now: number;
+}
+
+interface SubscribeState {
+  email: string;
+  note: string;
+  ok: boolean;
+  busy: boolean;
+}
+
+interface Hover {
+  index: number;
+  center: number;
+}
+
+function onInit(state: State, slug: string, listener: Listener<AccountEvent>) {
+  listener.on("notify", (event) => onEvent(event, state, slug));
+  setInterval(() => state.now = Date.now(), 30000);
+}
+
+function onEvent(event: AccountEvent, state: State, slug: string) {
+  if (event.kind === "check" && event.monitorId) {
+    let fresh = fetchComponent(slug, event.monitorId);
+
+    if (fresh) {
+      state.components = state.components.map((c) => c.id === fresh!.id ? fresh! : c);
+    }
+  } else if (event.kind === "monitors") {
+    state.components = fetchComponents(slug);
+  } else if (event.kind === "incidents") {
+    state.incidents = fetchPublicIncidents(slug);
+  }
+
+  state.now = Date.now();
+}
+
+function onSubscribe(form: SubscribeState, slug: string) {
+  form.busy = true;
+
+  try {
+    subscribe(slug, form.email);
+    form.note = `Subscribed. ${form.email} will get an email when an incident is updated.`;
+    form.ok = true;
+    form.email = "";
+  } catch (err: any) {
+    form.note = err.message;
+    form.ok = false;
+  }
+
+  form.busy = false;
+}
+
+function dayClass(day: DayBar): string {
+  if (day.checks === 0) {
+    return "bar-day";
+  }
+
+  if (day.failures === 0) {
+    return "bar-day is-ok";
+  }
+
+  return (day.checks - day.failures) / day.checks >= 0.99 ? "bar-day is-minor" : "bar-day is-major";
+}
+
+function dayLabel(day: string): string {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+function daySummary(day: DayBar): string {
+  if (day.checks === 0) {
+    return "No data";
+  }
+
+  if (day.failures === 0) {
+    return "No downtime";
+  }
+
+  return `${formatUptime((day.checks - day.failures) / day.checks)} uptime · ${day.failures} failed check${day.failures === 1 ? "" : "s"}`;
+}
+
+function utcDay(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function incidentsOn(day: string, componentId: string, incidents: Incident[], now: number): Incident[] {
+  return incidents.filter((i) =>
+    i.monitorId === componentId
+    && utcDay(i.startedAt) <= day
+    && day <= utcDay(i.resolvedAt ?? new Date(now)));
+}
+
+/**
+ * Reads the day from the cell under the pointer rather than from the x
+ * position, because a phone shows only the last 30 of the 90 cells.
+ */
+function onBarMove(event: PointerEvent, hover: Hover) {
+  let cell = (event.target as HTMLElement).closest(".bar-day") as HTMLElement | null;
+
+  if (!cell || !cell.parentElement) {
+    return;
+  }
+
+  hover.index = Array.from(cell.parentElement.children).indexOf(cell);
+  hover.center = cell.offsetLeft + cell.offsetWidth / 2;
+}
+
+function tipLeft(center: number): string {
+  return `clamp(0px, calc(${center}px - 7.5rem), calc(100% - 15rem))`;
+}
+
+function stateLabel(status: string): string {
+  return status === "up" ? "Operational" : status === "down" ? "Outage" : "Checking";
+}
+
+function openIncidents(incidents: Incident[]): Incident[] {
+  return incidents.filter((i) => i.status !== "resolved");
+}
+
+function pastIncidents(incidents: Incident[]): Incident[] {
+  return incidents.filter((i) => i.status === "resolved");
+}
+
+<html lang="en" class="page-status" (
+  account: StatusAccount,
+  listener: Listener<AccountEvent>,
+  initialComponents: StatusComponent[],
+  initialIncidents: Incident[],
+  private state: State = { components: initialComponents, incidents: initialIncidents, now: Date.now() },
+  private form: SubscribeState = { email: "", note: "", ok: false, busy: false },
+) oninit={() => onInit(state, account.slug, listener)}>
+  <head>
+    <title>{account.name} status</title>
+    <meta name="description" content={`Live status and incident history for ${account.name}`}>
+  </head>
+  <body>
+    <main class="page-shell status-shell stack is-lg">
+      <div class="status-top cluster is-md">
+        <div class="stack is-xs">
+          <h1>{account.name} status</h1>
+          <p>Live, checked every minute</p>
+        </div>
+        <a class="button is-sm" href="#subscribe">Get updates by email</a>
+      </div>
+
+      <StatusBanner components={state.components}/>
+
+      <section e:if={openIncidents(state.incidents).length > 0} class="stack" aria-label="Active incidents">
+        <div e:for={incident of openIncidents(state.incidents)} class="card incident-card">
+          <div class="card-body stack">
+            <div class="stack is-xs">
+              <div class="cluster is-sm">
+                <IncidentPill status={incident.status}/>
+                <span class="meta">{incident.monitorName ?? ""}</span>
+              </div>
+              <h3>{incident.title}</h3>
+              <span class="meta">Started {formatDateTime(incident.startedAt)} · ongoing for {formatDuration(incident.startedAt, null, state.now)}</span>
+            </div>
+            <Timeline updates={incident.updates}/>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="components-title">
+        <div class="card-head row" style="justify-content: space-between">
+          <h2 id="components-title">Components</h2>
+          <div class="bar-legend cluster is-sm" aria-hidden="true">
+            <span><span class="legend-swatch" style="background: var(--success)"></span>No downtime</span>
+            <span><span class="legend-swatch" style="background: var(--warning)"></span>Under 1% down</span>
+            <span><span class="legend-swatch" style="background: var(--danger)"></span>Outage</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p e:if={state.components.length === 0} class="meta">No components yet.</p>
+          <ComponentRow e:for={component of state.components} {component} incidents={state.incidents} now={state.now}/>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="history-title">
+        <div class="card-head"><h2 id="history-title">Past incidents</h2></div>
+        <div class="card-body">
+          <p e:if={pastIncidents(state.incidents).length === 0} class="meta">No incidents in the last 90 days.</p>
+          <details e:for={incident of pastIncidents(state.incidents)} class="past-incident">
+            <summary>
+              {incident.title}
+              <span class="meta">
+                {incident.monitorName ?? ""} · {formatDateTime(incident.startedAt)} · lasted {formatDuration(incident.startedAt, incident.resolvedAt, state.now)}
+              </span>
+            </summary>
+            <Timeline updates={incident.updates}/>
+          </details>
+        </div>
+      </section>
+
+      <section id="subscribe" class="card">
+        <div class="card-body stack is-sm">
+          <h2 class="text-lg">Get incident updates</h2>
+          <p class="text-ink-soft" style="margin: 0">We email you when {account.name} posts an update to an incident.</p>
+          <form class="cluster is-sm subscribe-form" onsubmit={() => onSubscribe(form, account.slug)}>
+            <div class="field">
+              <label for="subscribe-email" class="sr-only">Email</label>
+              <input id="subscribe-email" type="email" value={form.email} placeholder="you@example.com" autocomplete="email" autocapitalize="none" spellcheck={false} required>
+            </div>
+            <button type="submit" class={["is-primary", form.busy && "is-loading"]} disabled={form.busy}>Subscribe</button>
+          </form>
+          <p e:if={form.note} class={["subscribe-note", form.ok ? "is-ok" : "is-error"]} role="status">{form.note}</p>
+        </div>
+      </section>
+
+      <footer class="status-footer">Powered by <a href="/">uptimebell</a></footer>
+    </main>
+  </body>
+</html>
+
+<StatusBanner (components: StatusComponent[])>
+  <div e:if={components.some((c) => c.status === "down")} class="status-banner is-down" role="status">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9.5"/></svg>
+    {components.filter((c) => c.status === "down").length === components.length ? "Major outage" : "Partial outage"}:
+    {components.filter((c) => c.status === "down").map((c) => c.name).join(", ")}
+  </div>
+  <div e:else class="status-banner is-ok" role="status">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 12.5l3 3 6-6.5"/><circle cx="12" cy="12" r="9.5"/></svg>
+    All systems operational
+  </div>
+</StatusBanner>
+
+<ComponentRow (
+  component: StatusComponent,
+  incidents: Incident[],
+  now: number,
+  private hover: Hover = { index: -1, center: 0 },
+)>
+  <div class="component">
+    <div class="component-head row">
+      <span class="component-name">{component.name}</span>
+      <span class={["component-state", `is-${component.status}`]}>
+        <svg e:if={component.status === "up"} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+        <svg e:elseif={component.status === "down"} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        {stateLabel(component.status)}
+      </span>
+    </div>
+    <div class="bar"
+         role="img"
+         aria-label={`${component.name}: ${formatUptime(component.uptime90)} uptime over the last 90 days`}
+         onpointermove={(e: PointerEvent) => onBarMove(e, hover)}
+         onpointerleave={() => hover.index = -1}>
+      <span e:for={day of component.days} class={[dayClass(day), hover.index >= 0 && component.days[hover.index] === day && "is-hover"]}></span>
+      <div e:if={hover.index >= 0 && component.days[hover.index]} class="bar-tip" style={`left: ${tipLeft(hover.center)}`}>
+        <strong>{dayLabel(component.days[hover.index].day)}</strong>
+        <span>{daySummary(component.days[hover.index])}</span>
+        <ul e:if={incidentsOn(component.days[hover.index].day, component.id, incidents, now).length > 0}>
+          <li e:for={incident of incidentsOn(component.days[hover.index].day, component.id, incidents, now)}>{incident.title}</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bar-axis">
+      <span class="bar-span-90">90 days ago</span>
+      <span class="bar-span-30">30 days ago</span>
+      <span>{formatUptime(component.uptime90)} uptime (90 days)</span>
+      <span>Today</span>
+    </div>
+  </div>
+</ComponentRow>

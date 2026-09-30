@@ -1,0 +1,23 @@
+import "./style.css";
+import { IncidentUpdate } from "#app/shared/services/incidents";
+import { formatDateTime } from "#app/shared/format";
+
+export function incidentIntent(status: string): string {
+  return status === "resolved" ? "is-success" : status === "identified" ? "is-warning" : "is-danger";
+}
+
+<IncidentPill (status: string)>
+  <span class={["pill", incidentIntent(status)]} style="text-transform: capitalize"><span class="pill-dot"></span>{status}</span>
+</IncidentPill>
+
+<Timeline (updates: IncidentUpdate[])>
+  <ol class="timeline">
+    <li e:for={update of updates} class="timeline-item">
+      <span class={["timeline-status", `is-${update.status}`]}>{update.status}</span>
+      <div>
+        <p>{update.body}</p>
+        <span class="timeline-time">{formatDateTime(update.createdAt)}</span>
+      </div>
+    </li>
+  </ol>
+</Timeline>

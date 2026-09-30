@@ -1,0 +1,268 @@
+@import "#app/shared/styles/page.css";
+
+.page-status body {
+  background: var(--bg-soft);
+}
+
+.status-shell {
+  max-width: 52rem;
+  padding-block: var(--space-8) var(--space-16);
+}
+
+.status-top {
+  justify-content: space-between;
+}
+
+.status-top h1 {
+  margin: 0;
+  font-size: var(--text-2xl);
+}
+
+.status-top p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-surface);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.status-banner.is-ok {
+  background: var(--success-soft);
+  color: var(--success-ink);
+  border: 1px solid var(--success-edge);
+}
+
+.status-banner.is-down {
+  background: var(--danger-soft);
+  color: var(--danger-ink);
+  border: 1px solid var(--danger-edge);
+}
+
+.status-banner svg {
+  flex: none;
+}
+
+.component {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--rule-soft);
+}
+
+.component:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.component:last-child {
+  padding-bottom: 0;
+}
+
+.component-head {
+  justify-content: space-between;
+}
+
+.component-name {
+  font-weight: var(--weight-semibold);
+}
+
+.component-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.component-state.is-up {
+  color: var(--success-ink);
+}
+
+.component-state.is-down {
+  color: var(--danger-ink);
+}
+
+.component-state.is-pending {
+  color: var(--ink-dim);
+}
+
+.bar {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  height: 2.25rem;
+}
+
+.bar-day {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 2px;
+  background: var(--bg-muted);
+  transition: opacity 120ms ease;
+}
+
+.bar-day.is-ok {
+  background: var(--success);
+}
+
+.bar-day.is-minor {
+  background: var(--warning);
+}
+
+.bar-day.is-major {
+  background: var(--danger);
+}
+
+.bar:hover .bar-day {
+  opacity: 0.55;
+}
+
+.bar:hover .bar-day.is-hover {
+  opacity: 1;
+}
+
+.bar-tip {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  z-index: 3;
+  width: 15rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+
+.bar-tip strong {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+
+.bar-tip ul {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-4);
+}
+
+.bar-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+}
+
+.bar-legend {
+  justify-content: flex-end;
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 2px;
+  margin-inline-end: var(--space-1);
+  vertical-align: -0.05rem;
+}
+
+.incident-card h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.incident-card .meta,
+.past-incident .meta {
+  font-size: var(--text-xs);
+  color: var(--ink-dim);
+}
+
+.past-incident {
+  padding-block: var(--space-3);
+  border-top: 1px solid var(--rule-soft);
+}
+
+.past-incident:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.past-incident summary {
+  cursor: pointer;
+  font-weight: var(--weight-medium);
+}
+
+.past-incident summary .meta {
+  display: block;
+  margin-inline-start: var(--space-5);
+  font-weight: var(--weight-normal);
+}
+
+.past-incident .timeline {
+  margin-top: var(--space-3);
+}
+
+.subscribe-form {
+  align-items: flex-end;
+}
+
+.subscribe-form .field {
+  flex: 1 1 16rem;
+}
+
+.subscribe-note {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.subscribe-note.is-ok {
+  color: var(--success-ink);
+}
+
+.subscribe-note.is-error {
+  color: var(--danger-ink);
+}
+
+.status-footer {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.status-footer a {
+  color: inherit;
+}
+
+.bar-span-30 {
+  display: none;
+}
+
+@media (max-width: 36rem) {
+  .bar-day:nth-child(-n + 60) {
+    display: none;
+  }
+
+  .bar-span-90 {
+    display: none;
+  }
+
+  .bar-span-30 {
+    display: inline;
+  }
+
+  .bar {
+    gap: 3px;
+  }
+}

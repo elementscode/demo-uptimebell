@@ -1,0 +1,277 @@
+import "./style.css";
+import type { Listener } from "@elements/app";
+import { session, ValidationError } from "@elements/app";
+import { Layout } from "#app/shared/templates/layout";
+import { IncidentPill } from "#app/shared/templates/timeline";
+import { AccountEvent } from "#app/shared/services/events";
+import { MonitorSummary, MonitorForm, fetchMonitor, fetchMonitors, addMonitor, deleteMonitor } from "#app/shared/services/monitors";
+import { Incident, IncidentStatus, DeclareForm, INCIDENT_STATUSES, fetchIncidents, declareIncident } from "#app/shared/services/incidents";
+import { formatUptime, formatMs, timeAgo, formatDuration, formatDateTime } from "#app/shared/format";
+import { ResponseChart, buildChart } from "./chart";
+
+type FieldErrors = Partial<Record<string, string[]>>;
+
+interface State {
+  monitors: MonitorSummary[];
+  incidents: Incident[];
+  now: number;
+}
+
+interface AddState {
+  fields: MonitorForm;
+  errors: FieldErrors;
+  busy: boolean;
+}
+
+interface DeclareState {
+  fields: DeclareForm;
+  errors: FieldErrors;
+  open: boolean;
+  busy: boolean;
+}
+
+function onInit(state: State, listener: Listener<AccountEvent>) {
+  listener.on("notify", (event) => onEvent(event, state));
+  setInterval(() => state.now = Date.now(), 5000);
+}
+
+function onEvent(event: AccountEvent, state: State) {
+  if (event.kind === "check" && event.monitorId) {
+    try {
+      let fresh = fetchMonitor(event.monitorId);
+      state.monitors = state.monitors.map((m) => m.id === fresh.id ? fresh : m);
+    } catch {
+      state.monitors = fetchMonitors();
+    }
+  } else if (event.kind === "monitors") {
+    state.monitors = fetchMonitors();
+  } else if (event.kind === "incidents") {
+    state.incidents = fetchIncidents();
+  }
+
+  state.now = Date.now();
+}
+
+function onAdd(add: AddState, state: State) {
+  add.busy = true;
+
+  try {
+    let monitor = addMonitor(add.fields);
+
+    if (!state.monitors.some((m) => m.id === monitor.id)) {
+      state.monitors = [...state.monitors, monitor];
+    }
+
+    add.fields = { name: "", url: "" };
+    add.errors = {};
+  } catch (err: any) {
+    if (err instanceof ValidationError) {
+      add.errors = err.errors ?? {};
+    } else {
+      add.errors = { url: [err.message] };
+    }
+  }
+
+  add.busy = false;
+}
+
+function onDelete(monitor: MonitorSummary, state: State) {
+  if (!confirm(`Delete ${monitor.name}? Its check history goes with it.`)) {
+    return;
+  }
+
+  deleteMonitor(monitor.id);
+  state.monitors = state.monitors.filter((m) => m.id !== monitor.id);
+}
+
+function onDeclare(declare: DeclareState, state: State) {
+  declare.busy = true;
+
+  try {
+    let incident = declareIncident(declare.fields);
+    state.incidents = [incident, ...state.incidents.filter((i) => i.id !== incident.id)];
+    declare.fields = { title: "", monitorId: "", status: "investigating", body: "" };
+    declare.errors = {};
+    declare.open = false;
+  } catch (err: any) {
+    if (err instanceof ValidationError) {
+      declare.errors = err.errors ?? {};
+    } else {
+      declare.errors = { body: [err.message] };
+    }
+  }
+
+  declare.busy = false;
+}
+
+function counts(monitors: MonitorSummary[]) {
+  return {
+    up: monitors.filter((m) => m.status === "up").length,
+    down: monitors.filter((m) => m.status === "down").length,
+  };
+}
+
+function statusLabel(status: string): string {
+  return status === "up" ? "Up" : status === "down" ? "Down" : "Pending";
+}
+
+function statusIntent(status: string): string {
+  return status === "up" ? "is-success" : status === "down" ? "is-danger" : "";
+}
+
+<html lang="en" class="page-dashboard" (
+  listener: Listener<AccountEvent>,
+  initialMonitors: MonitorSummary[],
+  initialIncidents: Incident[],
+  subscriberCount: number,
+  private state: State = { monitors: initialMonitors, incidents: initialIncidents, now: Date.now() },
+  private add: AddState = { fields: { name: "", url: "" }, errors: {}, busy: false },
+  private declare: DeclareState = {
+    fields: { title: "", monitorId: "", status: "investigating" as IncidentStatus, body: "" },
+    errors: {},
+    open: false,
+    busy: false,
+  },
+) oninit={() => onInit(state, listener)}>
+  <head>
+    <title>Dashboard · uptimebell</title>
+    <meta name="description" content="Your monitors and incidents">
+  </head>
+  <body>
+    <Layout active="dashboard">
+      <div class="page-shell is-wide stack is-lg">
+        <div class="dash-head cluster is-md">
+          <div class="stack is-xs">
+            <h1>Monitors</h1>
+            <p>Checked every minute. Three failures in a row opens an incident.</p>
+          </div>
+          <div class="cluster is-sm">
+            <span class="pill is-success is-live"><span class="pill-dot"></span>{counts(state.monitors).up} up</span>
+            <span class={["pill", counts(state.monitors).down > 0 && "is-danger"]}><span class="pill-dot"></span>{counts(state.monitors).down} down</span>
+            <a class="button is-sm" href={`/status/${session.get("slug")}`} target="_blank" rel="noopener">Status page ↗</a>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="stack">
+            <p e:if={state.monitors.length === 0} class="card card-body side-empty">No monitors yet. Add a url on the right and the first check runs within a minute.</p>
+            <MonitorCard e:for={monitor of state.monitors} {monitor} {state}/>
+          </div>
+
+          <div class="stack">
+            <IncidentsCard {state} {declare}/>
+
+            <div class="card side-card">
+              <div class="card-head"><h2>Add a monitor</h2></div>
+              <div class="card-body">
+                <form class="stack is-sm" onsubmit={() => onAdd(add, state)}>
+                  <div class="field">
+                    <label for="monitor-name">Name</label>
+                    <input id="monitor-name" value={add.fields.name} placeholder="Marketing site" class={[add.errors.name && "is-error"]} required>
+                    <p e:if={add.errors.name} class="hint is-error">{add.errors.name?.[0]}</p>
+                  </div>
+                  <div class="field">
+                    <label for="monitor-url">URL</label>
+                    <input id="monitor-url" type="url" value={add.fields.url} placeholder="https://example.com" autocapitalize="none" spellcheck={false} class={[add.errors.url && "is-error"]} required>
+                    <p e:if={add.errors.url} class="hint is-error">{add.errors.url?.[0]}</p>
+                  </div>
+                  <button type="submit" class={["is-primary", add.busy && "is-loading"]} disabled={add.busy}>Add monitor</button>
+                </form>
+              </div>
+            </div>
+
+            <div class="card side-card">
+              <div class="card-body stack is-xs">
+                <h2 class="text-base">Subscribers</h2>
+                <p class="side-empty">{subscriberCount} {subscriberCount === 1 ? "person gets" : "people get"} your incident updates by email.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  </body>
+</html>
+
+<MonitorCard (monitor: MonitorSummary, state: State)>
+  <article class={["card monitor-card", monitor.status === "down" && "is-down"]}>
+    <div class="card-body stack">
+      <div class="monitor-head row">
+        <div class="monitor-title stack is-xs">
+          <h2>{monitor.name}</h2>
+          <a class="monitor-url" href={monitor.url} target="_blank" rel="noopener">{monitor.url}</a>
+        </div>
+        <span class={["pill", statusIntent(monitor.status)]}><span class="pill-dot"></span>{statusLabel(monitor.status)}</span>
+      </div>
+
+      <dl class="monitor-stats">
+        <div><dt>Response</dt><dd>{formatMs(monitor.lastResponseMs)}</dd></div>
+        <div><dt>Uptime 24h</dt><dd>{formatUptime(monitor.uptime24)}</dd></div>
+        <div><dt>7 days</dt><dd>{formatUptime(monitor.uptime7)}</dd></div>
+        <div><dt>90 days</dt><dd>{formatUptime(monitor.uptime90)}</dd></div>
+      </dl>
+
+      <p e:if={monitor.status === "down" && monitor.lastError} class="monitor-error">{monitor.lastError}</p>
+
+      <ResponseChart chart={buildChart(monitor.series)} label={monitor.name}/>
+
+      <div class="monitor-foot row">
+        <span>Checked {timeAgo(monitor.lastCheckedAt, state.now)}</span>
+        <button class="is-ghost is-sm" onclick={() => onDelete(monitor, state)}>Delete</button>
+      </div>
+    </div>
+  </article>
+</MonitorCard>
+
+<IncidentsCard (state: State, declare: DeclareState)>
+  <div class="card side-card">
+    <div class="card-head"><h2>Incidents</h2></div>
+    <div class="card-body stack">
+      <div>
+        <p e:if={state.incidents.length === 0} class="side-empty">No incidents in the last 90 days.</p>
+        <div e:for={incident of state.incidents.slice(0, 8)} class="incident-item">
+          <div class="cluster is-xs">
+            <IncidentPill status={incident.status}/>
+            <span class="meta">{incident.monitorName ?? "No monitor"}</span>
+          </div>
+          <a href={`/incidents/${incident.id}`}>{incident.title}</a>
+          <p e:if={incident.status !== "resolved" && incident.updates[0]}>{incident.updates[0].body}</p>
+          <span class="meta">
+            {formatDateTime(incident.startedAt)} · {incident.status === "resolved" ? "lasted" : "ongoing for"} {formatDuration(incident.startedAt, incident.resolvedAt, state.now)}
+          </span>
+        </div>
+      </div>
+
+      <details class="declare" open={declare.open} ontoggle={(e: Event) => declare.open = (e.target as HTMLDetailsElement).open}>
+        <summary>Declare an incident</summary>
+        <form class="stack is-sm" onsubmit={() => onDeclare(declare, state)}>
+          <div class="field">
+            <label for="declare-title">Title</label>
+            <input id="declare-title" value={declare.fields.title} placeholder="Slow dashboard loads" class={[declare.errors.title && "is-error"]}>
+            <p e:if={declare.errors.title} class="hint is-error">{declare.errors.title?.[0]}</p>
+          </div>
+          <div class="field">
+            <label for="declare-monitor">Component</label>
+            <select id="declare-monitor" value={declare.fields.monitorId}>
+              <option value="">None</option>
+              <option e:for={monitor of state.monitors} value={monitor.id}>{monitor.name}</option>
+            </select>
+            <p e:if={declare.errors.monitorId} class="hint is-error">{declare.errors.monitorId?.[0]}</p>
+          </div>
+          <div class="field">
+            <label for="declare-status">Status</label>
+            <select id="declare-status" value={declare.fields.status}>
+              <option e:for={status of INCIDENT_STATUSES.filter((s) => s !== "resolved")} value={status}>{status}</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="declare-body">First update</label>
+            <textarea id="declare-body" rows={3} value={declare.fields.body} placeholder="What are customers seeing?" class={[declare.errors.body && "is-error"]}></textarea>
+            <p e:if={declare.errors.body} class="hint is-error">{declare.errors.body?.[0]}</p>
+          </div>
+          <button type="submit" class={["is-danger", declare.busy && "is-loading"]} disabled={declare.busy}>Declare and notify subscribers</button>
+        </form>
+      </details>
+    </div>
+  </div>
+</IncidentsCard>
