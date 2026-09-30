@@ -1,0 +1,42 @@
+import "./style.css";
+import { Brand } from "#app/shared/templates/layout";
+import { unsubscribe } from "#app/shared/services/status-page";
+
+function onConfirm(token: string, done: { value: boolean }) {
+  unsubscribe(token);
+  done.value = true;
+}
+
+<html lang="en" class="page-unsubscribe" (
+  token: string,
+  email: string,
+  accountName: string,
+  slug: string,
+  private done: { value: boolean } = { value: false },
+)>
+  <head>
+    <title>Unsubscribe · {accountName} status</title>
+    <meta name="description" content="Stop incident emails">
+  </head>
+  <body>
+    <main class="auth">
+      <div class="auth-column stack is-lg">
+        <div class="auth-intro"><Brand href={`/status/${slug}`}/></div>
+        <div class="card">
+          <div class="card-body stack">
+            <div e:if={done.value} class="stack is-sm">
+              <h1 class="text-xl">You're unsubscribed</h1>
+              <p>{email} will no longer get incident updates from {accountName}.</p>
+              <a href={`/status/${slug}`}>Back to the {accountName} status page</a>
+            </div>
+            <div e:else class="stack is-sm">
+              <h1 class="text-xl">Stop incident emails?</h1>
+              <p>{email} gets an email each time {accountName} updates an incident.</p>
+              <button class="is-primary is-block" onclick={() => onConfirm(token, done)}>Unsubscribe</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

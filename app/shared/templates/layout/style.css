@@ -1,0 +1,67 @@
+@import "#app/shared/styles/page.css";
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.app-header {
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg);
+}
+
+.app-header-inner {
+  justify-content: space-between;
+  padding-block: var(--space-3);
+}
+
+.app-header nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: var(--text-sm);
+}
+
+.app-header nav a:hover,
+.app-header nav a.is-active {
+  color: var(--ink);
+}
+
+.app-header button {
+  white-space: nowrap;
+}
+
+.app-header .account {
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+}
+
+.app-body {
+  padding-block: var(--space-8) var(--space-16);
+}
+
+@media (max-width: 30rem) {
+  .app-header .account {
+    display: none;
+  }
+
+  .app-header-inner {
+    align-items: flex-start;
+  }
+}

@@ -1,0 +1,107 @@
+import "./style.css";
+import { redirect } from "@elements/app";
+import { signin } from "#app/shared/services/auth";
+import { Brand } from "#app/shared/templates/layout";
+
+interface SigninForm {
+  email: string;
+  password: string;
+  error: string;
+  busy: boolean;
+}
+
+export interface DemoLogin {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+}
+
+function onSubmit(form: SigninForm) {
+  form.busy = true;
+
+  try {
+    signin(form.email, form.password);
+    form.error = "";
+    redirect("/dashboard");
+  } catch (err: any) {
+    form.error = err.message;
+    form.busy = false;
+  }
+}
+
+function onUseDemo(form: SigninForm, login: DemoLogin) {
+  form.email = login.email;
+  form.password = login.password;
+  onSubmit(form);
+}
+
+<html lang="en" class="page-signin" (
+  demoLogins: DemoLogin[],
+  private form: SigninForm = { email: "", password: "", error: "", busy: false },
+)>
+  <head>
+    <title>Sign in · uptimebell</title>
+    <meta name="description" content="Sign in to uptimebell">
+  </head>
+  <body>
+    <main class="auth">
+      <div class="auth-column stack is-lg">
+        <div class="auth-intro stack is-sm">
+          <div><Brand href="/signin"/></div>
+          <p>Uptime checks every minute, and a status page your customers can follow.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <form class="stack" onsubmit={() => onSubmit(form)}>
+              <h1 class="text-xl">Sign in</h1>
+
+              <p e:if={form.error} class="error" role="alert">{form.error}</p>
+
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email"
+                       name="email"
+                       type="email"
+                       value={form.email}
+                       autocomplete="email"
+                       autocapitalize="none"
+                       spellcheck={false}
+                       placeholder="you@company.com"
+                       required>
+              </div>
+
+              <div class="field">
+                <label for="password">Password</label>
+                <input id="password"
+                       name="password"
+                       type="password"
+                       value={form.password}
+                       autocomplete="current-password"
+                       required>
+              </div>
+
+              <button type="submit" class={["is-primary is-block", form.busy && "is-loading"]} disabled={form.busy}>Sign in</button>
+            </form>
+          </div>
+        </div>
+
+        <div e:if={demoLogins.length > 0} class="demo-logins stack is-sm">
+          <h2>Demo accounts</h2>
+          <div class="stack is-xs">
+            <button e:for={login of demoLogins} class="demo-login row" onclick={() => onUseDemo(form, login)}>
+              <span class="demo-login-text">
+                <strong>{login.name}</strong>
+                <span>{login.email} · {login.password}</span>
+              </span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </div>
+
+        <p class="auth-switch">New here? <a href="/signup">Create an account</a></p>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,116 @@
+import "./style.css";
+import type { Listener } from "@elements/app";
+import { ValidationError } from "@elements/app";
+import { Layout } from "#app/shared/templates/layout";
+import { IncidentPill, Timeline } from "#app/shared/templates/timeline";
+import { AccountEvent } from "#app/shared/services/events";
+import { Incident, IncidentStatus, UpdateForm, INCIDENT_STATUSES, fetchIncident, postUpdate } from "#app/shared/services/incidents";
+import { formatDateTime, formatDuration } from "#app/shared/format";
+
+interface State {
+  incident: Incident;
+  now: number;
+}
+
+interface PostState {
+  fields: UpdateForm;
+  error: string;
+  sent: string;
+  busy: boolean;
+}
+
+function onInit(state: State, listener: Listener<AccountEvent>) {
+  listener.on("notify", (event) => {
+    if (event.kind === "incidents") {
+      state.incident = fetchIncident(state.incident.id);
+    }
+  });
+
+  setInterval(() => state.now = Date.now(), 30000);
+}
+
+function onPost(post: PostState, state: State, subscriberCount: number) {
+  post.busy = true;
+
+  try {
+    state.incident = postUpdate(post.fields);
+    post.fields.body = "";
+    post.error = "";
+    post.sent = subscriberCount > 0 ? `Posted. Emailing ${subscriberCount} subscriber${subscriberCount === 1 ? "" : "s"}.` : "Posted.";
+  } catch (err: any) {
+    post.error = err instanceof ValidationError ? Object.values(err.errors ?? {}).flat()[0] ?? err.message : err.message;
+    post.sent = "";
+  }
+
+  post.busy = false;
+}
+
+function nextStatus(status: IncidentStatus): IncidentStatus {
+  return status === "investigating" ? "identified" : "resolved";
+}
+
+<html lang="en" class="page-incident" (
+  listener: Listener<AccountEvent>,
+  initial: Incident,
+  subscriberCount: number,
+  private state: State = { incident: initial, now: Date.now() },
+  private post: PostState = {
+    fields: { incidentId: initial.id, status: nextStatus(initial.status), body: "" },
+    error: "",
+    sent: "",
+    busy: false,
+  },
+) oninit={() => onInit(state, listener)}>
+  <head>
+    <title>{state.incident.title} · uptimebell</title>
+    <meta name="description" content="Incident updates">
+  </head>
+  <body>
+    <Layout>
+      <div class="page-shell is-form stack is-lg">
+        <a class="incident-back" href="/dashboard">← Dashboard</a>
+
+        <div class="incident-head stack is-sm">
+          <div class="cluster is-sm">
+            <IncidentPill status={state.incident.status}/>
+            <span class="incident-meta">{state.incident.monitorName ?? "No component"}</span>
+          </div>
+          <h1>{state.incident.title}</h1>
+          <p class="incident-meta">
+            Started {formatDateTime(state.incident.startedAt)} ·
+            {state.incident.resolvedAt ? " lasted " : " ongoing for "}{formatDuration(state.incident.startedAt, state.incident.resolvedAt, state.now)}
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Post an update</h2></div>
+          <div class="card-body">
+            <form class="stack" onsubmit={() => onPost(post, state, subscriberCount)}>
+              <fieldset class="status-choice">
+                <legend class="sr-only">Status</legend>
+                <label e:for={status of INCIDENT_STATUSES}>
+                  <input type="radio" name="status" value={status} group={post.fields.status}>
+                  {status}
+                </label>
+              </fieldset>
+              <div class="field">
+                <label for="update-body">Message</label>
+                <textarea id="update-body" rows={4} value={post.fields.body} placeholder="What changed, and what customers should expect."></textarea>
+              </div>
+              <p e:if={post.error} class="form-error" role="alert">{post.error}</p>
+              <div class="row" style="justify-content: space-between">
+                <span class="incident-meta" role="status">{post.sent || `${subscriberCount} subscriber${subscriberCount === 1 ? "" : "s"} will get this by email.`}</span>
+                <button type="submit" class={["is-primary", post.busy && "is-loading"]} disabled={post.busy}>Post update</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <section class="stack">
+          <h2>Updates</h2>
+          <Timeline updates={state.incident.updates}/>
+        </section>
+      </div>
+    </Layout>
+  </body>
+</html>

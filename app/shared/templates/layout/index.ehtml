@@ -1,0 +1,45 @@
+import "./style.css";
+import { session, redirect } from "@elements/app";
+import { signout } from "#app/shared/services/auth";
+
+function onSignout() {
+  signout();
+  redirect("/signin");
+}
+
+<Bell>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/>
+    <path d="M10 21a2 2 0 0 0 4 0"/>
+  </svg>
+</Bell>
+
+<Brand (href: string = "/")>
+  <a class="brand" href={href}>
+    <span class="brand-mark"><Bell/></span>
+    uptimebell
+  </a>
+</Brand>
+
+<Layout (active: string = "")>
+  <div class="app">
+    <header class="app-header">
+      <div class="page-shell is-wide row app-header-inner">
+        <div class="cluster is-lg">
+          <Brand href="/dashboard"/>
+          <nav class="cluster is-md">
+            <a href="/dashboard" class={[active === "dashboard" && "is-active"]}>Dashboard</a>
+            <a href={`/status/${session.get("slug")}`} target="_blank" rel="noopener">Status page ↗</a>
+          </nav>
+        </div>
+        <div class="cluster is-md">
+          <span class="account">{session.get("userName")}</span>
+          <button class="is-ghost is-sm" onclick={() => onSignout()}>Sign out</button>
+        </div>
+      </div>
+    </header>
+    <main class="app-main app-body">
+      <slot/>
+    </main>
+  </div>
+</Layout>
