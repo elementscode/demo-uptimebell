@@ -29,12 +29,12 @@ Uptimebell needed a check of every site each minute, incidents that open on thei
 
 ### What Elements gave the app
 
-- **Checks on a schedule.** One line in `index.ts`, `app.cron("every 1m", ...)`, runs `ScheduleChecksJob`, which queues one `CheckMonitorJob` per monitor with an idempotency key for the monitor and the minute. A slow url holds up only its own check.
-- **Incidents in one transaction.** `recordCheck` in `app/jobs/check-monitor.ts` writes the check, the day's rollup and the monitor's state together, and the third failure in a row opens an incident, posts its first update and schedules `SendIncidentAlertJob`.
-- **A live status page.** An `accountEvents` channel in `app/shared/services/events.ts` announces each check and incident. The dashboard and `/status/:slug` listen for their own account and re-read through `@rpc` functions such as `fetchComponents`, so bars turn red and posted updates appear live.
-- **Email to subscribers.** Visitors subscribe from the status page, and `SendIncidentUpdateJob` sends each update with the `incident-update` template, one job per subscriber so a retry reaches only the person it missed.
+- **Checks on a schedule.** One cron line runs a job every minute that queues one check job per monitor, keyed to the monitor and the minute, so a slow site holds up only its own check.
+- **Incidents in one transaction.** Each check records its result, the day's rollup and the monitor's state together, and the third failure in a row opens an incident, posts its first update and schedules the alert email.
+- **A live status page.** A channel announces each check and incident. The dashboard and the public status page listen for their own account and re-read through `@rpc` functions, so bars turn red and posted updates appear live.
+- **Email to subscribers.** Visitors subscribe from the status page, and each incident update goes out as one background job per subscriber, so a retry reaches only the person it missed.
 - **Data from SQL files.** Two migrations define the schema and seed two accounts with eight monitors on reserved example domains, 90 days of checks with outages, the incidents and updates that came from them, and subscribers. Two monitors fail on purpose and stay red.
-- **Sessions.** Every dashboard rpc, from `addMonitor` to `postUpdate`, reads the account from the signed-in session.
+- **Sessions.** Every dashboard rpc reads the account from the signed-in session.
 
 ### What the project server gave the agent
 
@@ -43,8 +43,6 @@ The project server runs alongside the agent and answers as soon as a file is sav
 ### What shipped
 
 The app type-checks with zero errors and all 29 tests pass. Every page works on desktop and phone, and live updates arrive across tabs, such as an incident update reaching an open status page.
-
-Start in `app/jobs/check-monitor.ts`.
 
 ## Seed data and demo accounts
 
