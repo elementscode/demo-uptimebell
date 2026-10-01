@@ -36,9 +36,13 @@ Uptimebell needed a check of every site each minute, incidents that open on thei
 - **Data from SQL files.** Two migrations define the schema and seed two accounts with eight monitors on reserved example domains, 90 days of checks with outages, the incidents and updates that came from them, and subscribers. Two monitors fail on purpose and stay red.
 - **Sessions.** Every dashboard rpc, from `addMonitor` to `postUpdate`, reads the account from the signed-in session.
 
-### What the agent got from the tooling
+### What the project server gave the agent
 
-The agent ran 28 builds in 20 minutes. It checked its work after each edit and kept going. Along the way the build caught form error types that did not match, a status typed as a plain string, and two handlers converted to async, whose message named the fix: widen the return type to `void | Promise<void>` and await the call. The agent read the manual for each part as it reached it, 37 pages from `recipes/status-indicators` and `jobs` to `svg`, then wrote 29 tests. In a real browser it posted an update and watched it reach an open status page, and checked the status page and dashboard at phone width.
+The project server runs alongside the agent and answers as soon as a file is saved: it type-checks the templates, TypeScript and SQL, applies migrations and reruns the tests, so every question came back right away and the agent kept building.
+
+### What shipped
+
+The app type-checks with zero errors and all 29 tests pass. During the build the agent posted an incident update and watched it reach an open status page. Every page was checked on desktop and phone before publishing, and the repo was installed fresh from GitHub and run before the demo went live.
 
 Start in `app/jobs/check-monitor.ts`.
 
