@@ -38,7 +38,7 @@ Uptimebell needed a check of every site each minute, incidents that open on thei
 
 ### What the agent got from the tooling
 
-The agent ran 28 builds in 20 minutes. By the build's own timer, the median build finished in under a millisecond, so it checked its work after each edit and kept going. Along the way the build caught form error types that did not match, a status typed as a plain string, and two handlers converted to async, whose message named the fix: widen the return type to `void | Promise<void>` and await the call. The agent read the manual for each part as it reached it, 37 pages from `recipes/status-indicators` and `jobs` to `svg`, then wrote 29 tests. In a real browser it posted an update and watched it reach an open status page, and checked the status page and dashboard at phone width.
+The agent ran 28 builds in 20 minutes. It checked its work after each edit and kept going. Along the way the build caught form error types that did not match, a status typed as a plain string, and two handlers converted to async, whose message named the fix: widen the return type to `void | Promise<void>` and await the call. The agent read the manual for each part as it reached it, 37 pages from `recipes/status-indicators` and `jobs` to `svg`, then wrote 29 tests. In a real browser it posted an update and watched it reach an open status page, and checked the status page and dashboard at phone width.
 
 Start in `app/jobs/check-monitor.ts`.
 
