@@ -23,6 +23,25 @@ app.
 elements create uptimebell -scaffold=elementscode/demo-uptimebell
 ```
 
+## How it's built
+
+Uptimebell needed a check of every site each minute, incidents that open on their own, a status page that updates as people watch, and email to subscribers. Each of those is a part of Elements, so the agent spent its 20 minutes on the monitoring itself.
+
+### What Elements gave the app
+
+- **Checks on a schedule.** One line in `index.ts`, `app.cron("every 1m", ...)`, runs `ScheduleChecksJob`, which queues one `CheckMonitorJob` per monitor with an idempotency key for the monitor and the minute. A slow url holds up only its own check.
+- **Incidents in one transaction.** `recordCheck` in `app/jobs/check-monitor.ts` writes the check, the day's rollup and the monitor's state together, and the third failure in a row opens an incident, posts its first update and schedules `SendIncidentAlertJob`.
+- **A live status page.** An `accountEvents` channel in `app/shared/services/events.ts` announces each check and incident. The dashboard and `/status/:slug` listen for their own account and re-read through `@rpc` functions such as `fetchComponents`, so bars turn red and posted updates appear without a reload.
+- **Email to subscribers.** Visitors subscribe from the status page, and `SendIncidentUpdateJob` sends each update with the `incident-update` template, one job per subscriber so a retry reaches only the person it missed.
+- **Data from SQL files.** Two migrations define the schema and seed two accounts with eight monitors on reserved example domains, 90 days of checks with outages, the incidents and updates that came from them, and subscribers. Two monitors fail on purpose and stay red.
+- **Sessions.** Every dashboard rpc, from `addMonitor` to `postUpdate`, reads the account from the signed-in session.
+
+### What the agent got from the tooling
+
+The agent ran 28 builds in 20 minutes. By the build's own timer, the median build finished in under a millisecond, so it checked its work after each edit and kept going. Along the way the build caught form error types that did not match, a status typed as a plain string, and two handlers converted to async, whose message named the fix: widen the return type to `void | Promise<void>` and await the call. The agent read the manual for each part as it reached it, 37 pages from `recipes/status-indicators` and `jobs` to `svg`, then wrote 29 tests. In a real browser it posted an update and watched it reach an open status page, and checked the status page and dashboard at phone width.
+
+Start in `app/jobs/check-monitor.ts`.
+
 ## Seed data and demo accounts
 
 The seed creates two accounts, each with four monitors, 90 days of check
