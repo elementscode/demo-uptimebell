@@ -42,7 +42,7 @@ The project server runs alongside the agent and answers as soon as a file is sav
 
 ### What shipped
 
-The app type-checks with zero errors and all 29 tests pass. During the build the agent posted an incident update and watched it reach an open status page. Every page was checked on desktop and phone before publishing.
+The app type-checks with zero errors and all 29 tests pass. Every page works on desktop and phone, and live updates arrive across tabs, such as an incident update reaching an open status page.
 
 Start in `app/jobs/check-monitor.ts`.
 
