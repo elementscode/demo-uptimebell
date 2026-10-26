@@ -1,30 +1,16 @@
-![Uptimebell, an uptime monitor built with Elements: the Northwind dashboard with response time charts and uptime for 24 hours, 7 days and 90 days, a Payments monitor down with HTTP 404, and the incident list with an identified incident and past resolved ones.](https://elements.dev/demos/01a0f41f-a528-7e3d-97cb-02e9e521529d/poster?v=4ceaaa864869)
+![Uptime monitoring with a status page, built by Claude Code on Elements: the Northwind dashboard with response time charts and uptime for 24 hours, 7 days and 90 days, a Payments monitor down with HTTP 404, and the incident list with an identified incident and past resolved ones.](https://elements.dev/demos/01a0f41f-a528-7e3d-97cb-02e9e521529d/poster?v=4ceaaa864869)
 
-# Uptimebell
+# Uptime monitoring with a status page, built by Claude Code on Elements
 
-> A demo app built with [Elements](https://elements.dev).
+> Uptimebell is a full-stack app built with Claude Code on Elements.
 
 Checks your sites every minute, opens an incident after three failures, and runs a status page that emails subscribers.
 
-**Demo:** [Uptimebell](https://elements.dev/demos/01a0f41f-a528-7e3d-97cb-02e9e521529d)
-
-## Agent specs
-
-- **Agent:** Claude Code, Opus 5.5 Medium
-- **Time:** 20 min
-- **Cost:** $6.06 at API rates, September 2026
-
-## Get started
-
-```bash
-elements create uptimebell -scaffold=elementscode/demo-uptimebell
-```
+[Run this app on your machine](https://elements.dev/demos/01a0f41f-a528-7e3d-97cb-02e9e521529d). Use this demo as inspiration, or as the starting point for your own app. Your agent creates a new app with this one as the scaffold, and you prompt it to add whatever features you want.
 
 ## How it's built
 
 Uptimebell needed a check of every site each minute, incidents that open on their own, a status page that updates as people watch, and email to subscribers. Each of those is a part of Elements, so the agent spent its 20 minutes on the monitoring itself.
-
-### What Elements gave the app
 
 - **Checks on a schedule.** One cron line runs a job every minute that queues one check job per monitor, keyed to the monitor and the minute, so a slow site holds up only its own check.
 
@@ -38,36 +24,6 @@ Uptimebell needed a check of every site each minute, incidents that open on thei
 
 - **Sessions.** Every dashboard rpc reads the account from the signed-in session.
 
-### What the project server gave the agent
+## Why Elements
 
-The project server runs alongside the agent and answers as soon as a file is saved: it type-checks the templates, TypeScript and SQL, applies migrations and reruns the tests, so every question came back right away and the agent kept building.
-
-### What shipped
-
-The app type-checks with zero errors and all 29 tests pass. Every page works on desktop and phone, and live updates arrive across tabs, such as an incident update reaching an open status page.
-
-## Seed data and demo accounts
-
-The seed creates two accounts, each with four monitors, 90 days of check
-history (every five minutes, then every minute for the last 24 hours), past
-incidents with their updates, and a few status page subscribers. Both
-passwords are `uptimebell`, and the sign-in page lists them.
-
-| Email              | Account    | Status page         |
-| ------------------ | ---------- | ------------------- |
-| ops@northwind.test | Northwind  | `/status/northwind` |
-| team@lumen.test    | Lumen Labs | `/status/lumen`     |
-
-The background job checks every monitor once a minute. The seeded monitors
-point only at reserved example domains (`example.com`, `example.org`,
-`example.net` and their `www` hosts), so the app never loads a real site. Two
-fail on purpose: Northwind's Payments checks `https://example.com/payments/health`,
-which returns 404, and Lumen Labs' Webhooks checks
-`https://hooks.lumen-labs.invalid/health`, which cannot resolve. Within three
-minutes of starting, Webhooks opens a live incident and emails the account.
-
-**Demo:** [Uptimebell](https://elements.dev/demos/01a0f41f-a528-7e3d-97cb-02e9e521529d)
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+Elements is an integrated full-stack app framework and a project server. The project server checks the agent's work as it builds: it type-checks the server and browser code, analyzes the program, applies migrations and runs the tests, then reports the results to the agent. A security mistake, such as calling a server-only function from the browser, is a compile error. The agent reads the report and fixes its own mistakes before it tells you a feature is done. The same checks run on every feature you ask for next.
