@@ -24,31 +24,6 @@
   font-size: var(--text-sm);
 }
 
-.status-banner {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-surface);
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-}
-
-.status-banner.is-ok {
-  background: var(--success-soft);
-  color: var(--success-ink);
-  border: 1px solid var(--success-edge);
-}
-
-.status-banner.is-down {
-  background: var(--danger-soft);
-  color: var(--danger-ink);
-  border: 1px solid var(--danger-edge);
-}
-
-.status-banner svg {
-  flex: none;
-}
 
 .component {
   display: grid;
@@ -214,25 +189,20 @@
   margin-top: var(--space-3);
 }
 
+@media (max-width: 36rem) {
+  .bar-legend {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+  }
+}
+
 .subscribe-form {
   align-items: flex-end;
 }
 
-.subscribe-form .field {
+.subscribe-email {
   flex: 1 1 16rem;
-}
-
-.subscribe-note {
-  margin: 0;
-  font-size: var(--text-sm);
-}
-
-.subscribe-note.is-ok {
-  color: var(--success-ink);
-}
-
-.subscribe-note.is-error {
-  color: var(--danger-ink);
 }
 
 .status-footer {

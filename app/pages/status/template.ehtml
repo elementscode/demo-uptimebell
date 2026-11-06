@@ -6,6 +6,12 @@ import { StatusAccount, StatusComponent, DayBar, fetchComponent, fetchComponents
 import { Brand } from "#app/shared/templates/layout";
 import { IncidentPill, Timeline } from "#app/shared/templates/timeline";
 import { formatUptime, formatDateTime, formatDuration } from "#app/shared/format";
+import { Button } from "@elements/ui/button";
+import { Alert } from "@elements/ui/alert";
+import { Icon } from "@elements/ui/icon";
+import { Card, CardContent, CardAction } from "@elements/ui/card";
+import { Empty } from "@elements/ui/empty";
+import { Input } from "@elements/ui/input";
 
 interface State {
   components: StatusComponent[];
@@ -151,14 +157,14 @@ function pastIncidents(incidents: Incident[]): Incident[] {
           <h1>{account.name} status</h1>
           <p>Live, checked every minute</p>
         </div>
-        <a class="button is-sm" href="#subscribe">Get updates by email</a>
+        <Button size="sm" href="#subscribe">Get updates by email</Button>
       </div>
 
       <StatusBanner components={state.components}/>
 
       <section e:if={openIncidents(state.incidents).length > 0} class="stack" aria-label="Active incidents">
-        <div e:for={incident of openIncidents(state.incidents)} class="card incident-card">
-          <div class="card-body stack">
+        <Card e:for={incident of openIncidents(state.incidents)} class="incident-card">
+          <CardContent class="stack">
             <div class="stack is-xs">
               <div class="cluster is-sm">
                 <IncidentPill status={incident.status}/>
@@ -168,54 +174,55 @@ function pastIncidents(incidents: Incident[]): Incident[] {
               <span class="meta">Started {formatDateTime(incident.startedAt)} · ongoing for {formatDuration(incident.startedAt, null, state.now)}</span>
             </div>
             <Timeline updates={incident.updates}/>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </section>
 
-      <section class="card" aria-labelledby="components-title">
-        <div class="card-head row" style="justify-content: space-between">
-          <h2 id="components-title">Components</h2>
-          <div class="bar-legend cluster is-sm" aria-hidden="true">
-            <span><span class="legend-swatch" style="background: var(--success)"></span>No downtime</span>
-            <span><span class="legend-swatch" style="background: var(--warning)"></span>Under 1% down</span>
-            <span><span class="legend-swatch" style="background: var(--danger)"></span>Outage</span>
-          </div>
-        </div>
-        <div class="card-body">
-          <p e:if={state.components.length === 0} class="meta">No components yet.</p>
-          <ComponentRow e:for={component of state.components} {component} incidents={state.incidents} now={state.now}/>
-        </div>
-      </section>
-
-      <section class="card" aria-labelledby="history-title">
-        <div class="card-head"><h2 id="history-title">Past incidents</h2></div>
-        <div class="card-body">
-          <p e:if={pastIncidents(state.incidents).length === 0} class="meta">No incidents in the last 90 days.</p>
-          <details e:for={incident of pastIncidents(state.incidents)} class="past-incident">
-            <summary>
-              {incident.title}
-              <span class="meta">
-                {incident.monitorName ?? ""} · {formatDateTime(incident.startedAt)} · lasted {formatDuration(incident.startedAt, incident.resolvedAt, state.now)}
-              </span>
-            </summary>
-            <Timeline updates={incident.updates}/>
-          </details>
-        </div>
-      </section>
-
-      <section id="subscribe" class="card">
-        <div class="card-body stack is-sm">
-          <h2 class="text-lg">Get incident updates</h2>
-          <p class="text-ink-soft" style="margin: 0">We email you when {account.name} posts an update to an incident.</p>
-          <form class="cluster is-sm subscribe-form" onsubmit={() => onSubscribe(form, account.slug)}>
-            <div class="field">
-              <label for="subscribe-email" class="sr-only">Email</label>
-              <input id="subscribe-email" type="email" value={form.email} placeholder="you@example.com" autocomplete="email" autocapitalize="none" spellcheck={false} required>
+      <section aria-label="Components">
+        <Card title="Components" level={2}>
+          <CardAction slot="action">
+            <div class="bar-legend cluster is-sm" aria-hidden="true">
+              <span><span class="legend-swatch" style="background: var(--success)"></span>No downtime</span>
+              <span><span class="legend-swatch" style="background: var(--warning)"></span>Under 1% down</span>
+              <span><span class="legend-swatch" style="background: var(--danger)"></span>Outage</span>
             </div>
-            <button type="submit" class={["is-primary", form.busy && "is-loading"]} disabled={form.busy}>Subscribe</button>
-          </form>
-          <p e:if={form.note} class={["subscribe-note", form.ok ? "is-ok" : "is-error"]} role="status">{form.note}</p>
-        </div>
+          </CardAction>
+          <CardContent>
+            <Empty e:if={state.components.length === 0} variant="muted" description="No components yet."/>
+            <ComponentRow e:for={component of state.components} {component} incidents={state.incidents} now={state.now}/>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section aria-label="Past incidents">
+        <Card title="Past incidents" level={2}>
+          <CardContent>
+            <Empty e:if={pastIncidents(state.incidents).length === 0} variant="muted" description="No incidents in the last 90 days."/>
+            <details e:for={incident of pastIncidents(state.incidents)} class="past-incident">
+              <summary>
+                {incident.title}
+                <span class="meta">
+                  {incident.monitorName ?? ""} · {formatDateTime(incident.startedAt)} · lasted {formatDuration(incident.startedAt, incident.resolvedAt, state.now)}
+                </span>
+              </summary>
+              <Timeline updates={incident.updates}/>
+            </details>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section id="subscribe" aria-label="Get incident updates">
+        <Card>
+          <CardContent class="stack is-sm">
+            <h2 class="text-lg">Get incident updates</h2>
+            <p class="text-ink-soft" style="margin: 0">We email you when {account.name} posts an update to an incident.</p>
+            <form class="cluster is-sm subscribe-form" onsubmit={() => onSubscribe(form, account.slug)}>
+              <Input type="email" value={form.email} placeholder="you@example.com" class="subscribe-email" required attrs={{ "aria-label": "Email", autocomplete: "email", autocapitalize: "none", spellcheck: "false" }}/>
+              <Button type="submit" variant="primary" loading={form.busy}>Subscribe</Button>
+            </form>
+            <Alert e:if={form.note} variant={form.ok ? "success" : "danger"} role="status" description={form.note}/>
+          </CardContent>
+        </Card>
       </section>
 
       <footer class="status-footer">Powered by <a href="/">uptimebell</a></footer>
@@ -224,15 +231,15 @@ function pastIncidents(incidents: Incident[]): Incident[] {
 </html>
 
 <StatusBanner (components: StatusComponent[])>
-  <div e:if={components.some((c) => c.status === "down")} class="status-banner is-down" role="status">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9.5"/></svg>
-    {components.filter((c) => c.status === "down").length === components.length ? "Major outage" : "Partial outage"}:
-    {components.filter((c) => c.status === "down").map((c) => c.name).join(", ")}
-  </div>
-  <div e:else class="status-banner is-ok" role="status">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 12.5l3 3 6-6.5"/><circle cx="12" cy="12" r="9.5"/></svg>
-    All systems operational
-  </div>
+  <Alert e:if={components.some((c) => c.status === "down")}
+         variant="danger"
+         role="status"
+         title={`${components.filter((c) => c.status === "down").length === components.length ? "Major outage" : "Partial outage"}: ${components.filter((c) => c.status === "down").map((c) => c.name).join(", ")}`}>
+    <Icon name="alert-circle"/>
+  </Alert>
+  <Alert e:else variant="success" role="status" title="All systems operational">
+    <Icon name="check-circle"/>
+  </Alert>
 </StatusBanner>
 
 <ComponentRow (
@@ -245,8 +252,8 @@ function pastIncidents(incidents: Incident[]): Incident[] {
     <div class="component-head row">
       <span class="component-name">{component.name}</span>
       <span class={["component-state", `is-${component.status}`]}>
-        <svg e:if={component.status === "up"} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-        <svg e:elseif={component.status === "down"} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        <Icon e:if={component.status === "up"} name="check" size={14}/>
+        <Icon e:elseif={component.status === "down"} name="x" size={14}/>
         {stateLabel(component.status)}
       </span>
     </div>
