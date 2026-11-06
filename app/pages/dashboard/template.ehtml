@@ -215,7 +215,7 @@ function statusIntent(status: string): "success" | "danger" | "secondary" {
       <div class="monitor-foot row">
         <span>Checked {timeAgo(monitor.lastCheckedAt, state.now)}</span>
         <AlertDialog title={`Delete ${monitor.name}?`} description="Its check history goes with it." size="sm">
-          <Button slot="trigger" variant="ghost" size="sm">Delete</Button>
+          <Button slot="trigger" variant="outline" size="sm">Delete</Button>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="danger" onclick={() => onDelete(monitor, state)}>Delete</AlertDialogAction>

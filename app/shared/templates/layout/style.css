@@ -43,10 +43,6 @@
   color: var(--ink);
 }
 
-.app-header button {
-  white-space: nowrap;
-}
-
 .app-header .account {
   font-size: var(--text-sm);
   color: var(--ink-dim);
