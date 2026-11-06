@@ -1,5 +1,7 @@
 import "./style.css";
 import { Brand } from "#app/shared/templates/layout";
+import { Button } from "@elements/ui/button";
+import { Card, CardContent } from "@elements/ui/card";
 import { unsubscribe } from "#app/shared/services/status-page";
 
 function onConfirm(token: string, done: { value: boolean }) {
@@ -22,8 +24,8 @@ function onConfirm(token: string, done: { value: boolean }) {
     <main class="auth">
       <div class="auth-column stack is-lg">
         <div class="auth-intro"><Brand href={`/status/${slug}`}/></div>
-        <div class="card">
-          <div class="card-body stack">
+        <Card>
+          <CardContent class="stack">
             <div e:if={done.value} class="stack is-sm">
               <h1 class="text-xl">You're unsubscribed</h1>
               <p>{email} will no longer get incident updates from {accountName}.</p>
@@ -32,10 +34,10 @@ function onConfirm(token: string, done: { value: boolean }) {
             <div e:else class="stack is-sm">
               <h1 class="text-xl">Stop incident emails?</h1>
               <p>{email} gets an email each time {accountName} updates an incident.</p>
-              <button class="is-primary is-block" onclick={() => onConfirm(token, done)}>Unsubscribe</button>
+              <Button variant="primary" block onclick={() => onConfirm(token, done)}>Unsubscribe</Button>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </main>
   </body>
