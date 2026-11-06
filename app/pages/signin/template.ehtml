@@ -7,6 +7,7 @@ import { Alert } from "@elements/ui/alert";
 import { Card, CardContent } from "@elements/ui/card";
 import { Field } from "@elements/ui/field";
 import { Input } from "@elements/ui/input";
+import { Item, ItemGroup } from "@elements/ui/item";
 
 interface SigninForm {
   email: string;
@@ -86,15 +87,13 @@ function onUseDemo(form: SigninForm, login: DemoLogin) {
 
         <div e:if={demoLogins.length > 0} class="demo-logins stack is-sm">
           <h2>Demo accounts</h2>
-          <div class="stack is-xs">
-            <button e:for={login of demoLogins} class="demo-login row" onclick={() => onUseDemo(form, login)}>
-              <span class="demo-login-text">
-                <strong>{login.name}</strong>
-                <span>{login.email} · {login.password}</span>
-              </span>
-              <span aria-hidden="true">→</span>
-            </button>
-          </div>
+          <ItemGroup gap label="Demo accounts">
+            <Item e:for={login of demoLogins}
+                  variant="outline"
+                  title={login.name}
+                  description={`${login.email} · ${login.password}`}
+                  onclick={() => onUseDemo(form, login)}/>
+          </ItemGroup>
         </div>
 
         <p class="auth-switch">New here? <a href="/signup">Create an account</a></p>
