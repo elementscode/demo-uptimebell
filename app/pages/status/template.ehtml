@@ -12,6 +12,7 @@ import { Icon } from "@elements/ui/icon";
 import { Card, CardContent, CardAction } from "@elements/ui/card";
 import { Empty } from "@elements/ui/empty";
 import { Input } from "@elements/ui/input";
+import { Accordion, AccordionItem } from "@elements/ui/accordion";
 
 interface State {
   components: StatusComponent[];
@@ -195,18 +196,17 @@ function pastIncidents(incidents: Incident[]): Incident[] {
       </section>
 
       <section aria-label="Past incidents">
-        <Card title="Past incidents" level={2}>
+        <Card title="Past incidents" level={2} class="past-incidents">
           <CardContent>
             <Empty e:if={pastIncidents(state.incidents).length === 0} variant="muted" description="No incidents in the last 90 days."/>
-            <details e:for={incident of pastIncidents(state.incidents)} class="past-incident">
-              <summary>
-                {incident.title}
-                <span class="meta">
+            <Accordion e:if={pastIncidents(state.incidents).length > 0} multiple>
+              <AccordionItem e:for={incident of pastIncidents(state.incidents)} value={incident.id} title={incident.title}>
+                <span slot="trigger" class="meta">
                   {incident.monitorName ?? ""} · {formatDateTime(incident.startedAt)} · lasted {formatDuration(incident.startedAt, incident.resolvedAt, state.now)}
                 </span>
-              </summary>
-              <Timeline updates={incident.updates}/>
-            </details>
+                <Timeline updates={incident.updates}/>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
       </section>
