@@ -4,16 +4,13 @@
   font-size: var(--text-sm);
 }
 
-.incident-head h1 {
-  margin: 0;
-}
-
 .incident-meta {
   font-size: var(--text-sm);
   color: var(--ink-soft);
 }
 
 .incident-head h1 {
+  margin: 0;
   font-size: var(--text-3xl);
 }
 

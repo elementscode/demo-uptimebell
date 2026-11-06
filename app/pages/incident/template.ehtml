@@ -95,7 +95,7 @@ function nextStatus(status: IncidentStatus): IncidentStatus {
         <Card title="Post an update" level={2}>
           <CardContent>
             <form class="stack" onsubmit={() => onPost(post, state, subscriberCount)}>
-              <RadioGroup value={post.fields.status} name="status" options={statusOptions()} attrs={{ "aria-label": "Status" }}/>
+              <RadioGroup value={post.fields.status} name="status" options={statusOptions()} orientation="horizontal" attrs={{ "aria-label": "Status" }}/>
               <Field label="Message">
                 <Textarea rows={4} value={post.fields.body} placeholder="What changed, and what customers should expect."/>
               </Field>
