@@ -9,7 +9,7 @@ import { Button } from "@elements/ui/button";
       <p>We're looking into it. Please try again in a moment.</p>
       <nav class="cluster error-actions">
         <Button href="javascript:location.reload()" variant="primary">Try again</Button>
-        <Button href="/" variant="outline">Go home</Button>
+        <Button href="/" variant="ghost">Go home</Button>
       </nav>
     </main>
   </body>

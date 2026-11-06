@@ -35,7 +35,7 @@ function onSignout() {
         </div>
         <div class="cluster is-md">
           <span class="account">{session.get("userName")}</span>
-          <Button variant="outline" size="sm" onclick={() => onSignout()}>Sign out</Button>
+          <Button variant="ghost" size="sm" onclick={() => onSignout()}>Sign out</Button>
         </div>
       </div>
     </header>
