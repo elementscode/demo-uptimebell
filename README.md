@@ -6,6 +6,8 @@
 
 Checks your sites every minute, opens an incident after three failures, and runs a status page that emails subscribers.
 
+Uptimebell uses the `coder` theme from @elements/ui.
+
 [Run this app on your machine](https://elements.dev/demos/01a0f41f-a528-7e3d-97cb-02e9e521529d). Use this demo as inspiration, or as the starting point for your own app. Your agent creates a new app with this one as the scaffold, and you prompt it to add whatever features you want.
 
 ## How it's built
