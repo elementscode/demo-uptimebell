@@ -1,13 +1,14 @@
 import "./style.css";
+import { Badge } from "@elements/ui/badge";
 import { IncidentUpdate } from "#app/shared/services/incidents";
 import { formatDateTime } from "#app/shared/format";
 
-export function incidentIntent(status: string): string {
-  return status === "resolved" ? "is-success" : status === "identified" ? "is-warning" : "is-danger";
+export function incidentIntent(status: string): "success" | "warning" | "danger" {
+  return status === "resolved" ? "success" : status === "identified" ? "warning" : "danger";
 }
 
 <IncidentPill (status: string)>
-  <span class={["pill", incidentIntent(status)]} style="text-transform: capitalize"><span class="pill-dot"></span>{status}</span>
+  <Badge variant={incidentIntent(status)} dot class="capitalize">{status}</Badge>
 </IncidentPill>
 
 <Timeline (updates: IncidentUpdate[])>

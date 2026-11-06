@@ -10,7 +10,7 @@
 
 .timeline-item {
   display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr);
+  grid-template-columns: 9rem minmax(0, 1fr);
   gap: var(--space-3);
 }
 

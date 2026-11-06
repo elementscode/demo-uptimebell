@@ -119,10 +119,6 @@
   }
 }
 
-.side-card h2 {
-  margin: 0;
-}
-
 .incident-item {
   display: grid;
   gap: var(--space-1);
@@ -148,14 +144,4 @@
 
 .incident-item a {
   font-weight: var(--weight-medium);
-}
-
-.side-empty {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--ink-dim);
-}
-
-.declare summary {
-  font-size: var(--text-sm);
 }

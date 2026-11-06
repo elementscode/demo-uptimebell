@@ -1,26 +1,25 @@
 import "./chart.css";
+import type { ChartConfig } from "@elements/ui/chart";
+import { AreaChart } from "@elements/ui/chart-area";
+import { Empty } from "@elements/ui/empty";
 import { ChartPoint, BUCKET_MS } from "#app/shared/services/monitors";
 import { formatMs, formatTime } from "#app/shared/format";
 
-const WIDTH = 1440;
-const HEIGHT = 120;
-const PAD_TOP = 14;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const BUCKETS = (24 * 60 * 60 * 1000) / BUCKET_MS;
 
-export interface ChartBucket extends ChartPoint {
-  x: number;
-}
+export type ChartRow = {
+  slot: number;
+  t: number;
+  ms: number | null;
+  failed: number | null;
+  checks: number;
+  failures: number;
+};
 
 export interface Chart {
-  buckets: ChartBucket[];
-  line: string;
-  area: string;
+  rows: ChartRow[];
   yMax: number;
-  start: number;
-}
-
-interface Hover {
-  index: number;
+  empty: boolean;
 }
 
 function niceMax(value: number): number {
@@ -29,111 +28,72 @@ function niceMax(value: number): number {
   return steps.find((step) => step >= value * 1.15) ?? Math.ceil(value / 1000) * 1000;
 }
 
-/** Lays the last 24 hours out on a 1440-wide plot, one unit per minute. */
+/**
+ * Lays the last 24 hours out as one row per ten minute bucket. A bucket with
+ * no checks, or where every check timed out, has no response time, so the
+ * line breaks there rather than drawing a fall to zero. A bucket with a
+ * failed check fills the full height of the plot in the danger color.
+ */
 export function buildChart(series: ChartPoint[]): Chart {
-  let end = series.length > 0 ? series[series.length - 1].t + BUCKET_MS : Date.now();
-  let start = end - DAY_MS;
-  let values = series.map((point) => point.ms ?? 0);
-  let yMax = niceMax(Math.max(100, ...values));
-  let buckets = series.map((point) => ({ ...point, x: ((point.t - start + BUCKET_MS / 2) / DAY_MS) * WIDTH }));
-  let y = (ms: number) => HEIGHT - (ms / yMax) * (HEIGHT - PAD_TOP);
+  let end = series.length > 0 ? series[series.length - 1].t : Math.floor(Date.now() / BUCKET_MS) * BUCKET_MS;
+  let start = end - (BUCKETS - 1) * BUCKET_MS;
+  let yMax = niceMax(Math.max(100, ...series.map((point) => point.ms ?? 0)));
+  let byTime = new Map(series.map((point) => [point.t, point]));
+  let rows: ChartRow[] = [];
 
-  let line = "";
-  let area = "";
-  let run: ChartBucket[] = [];
+  for (let slot = 0; slot < BUCKETS; slot++) {
+    let t = start + slot * BUCKET_MS;
+    let point = byTime.get(t);
 
-  let flush = () => {
-    if (run.length === 0) {
-      return;
-    }
+    rows.push({ slot, t, ms: point?.ms ?? null, failed: null, checks: point?.checks ?? 0, failures: point?.failures ?? 0 });
+  }
 
-    let path = run.map((b, i) => `${i === 0 ? "M" : "L"}${b.x.toFixed(1)},${y(b.ms!).toFixed(1)}`).join("");
-    line += path;
-    area += `${path}L${run[run.length - 1].x.toFixed(1)},${HEIGHT}L${run[0].x.toFixed(1)},${HEIGHT}Z`;
-    run = [];
-  };
+  // A failed bucket fills the slot that ends at it: the band runs from the
+  // row before it to its own row, so a lone failure still has a width.
+  for (let slot = 0; slot < BUCKETS; slot++) {
+    if (rows[slot].failures > 0) {
+      rows[slot].failed = yMax;
 
-  // A bucket with no response time (every check timed out) breaks the line
-  // rather than drawing a fall to zero.
-  for (let bucket of buckets) {
-    if (bucket.ms === null) {
-      flush();
-    } else {
-      run.push(bucket);
+      if (slot > 0) {
+        rows[slot - 1].failed = yMax;
+      }
     }
   }
 
-  flush();
-
-  return { buckets, line, area, yMax, start };
+  return { rows, yMax, empty: series.length === 0 };
 }
 
-function onHover(event: PointerEvent, hover: Hover, chart: Chart) {
-  let box = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  let x = ((event.clientX - box.left) / box.width) * WIDTH;
-  let best = -1;
-  let distance = Infinity;
+const config: ChartConfig = {
+  ms: { label: "Response", color: "var(--accent)" },
+  failed: { label: "Failed", color: "var(--danger)", tooltipType: "none", legendType: "none", strokeOpacity: 0 },
+};
 
-  for (let i = 0; i < chart.buckets.length; i++) {
-    let d = Math.abs(chart.buckets[i].x - x);
-
-    if (d < distance) {
-      distance = d;
-      best = i;
-    }
-  }
-
-  hover.index = best;
+function slotLabel(slot: number): string {
+  return slot === 0 ? "24h ago" : slot === BUCKETS / 2 ? "12h ago" : "now";
 }
 
-function tipLeft(x: number): string {
-  let pct = (x / WIDTH) * 100;
-
-  return pct > 70 ? `calc(${pct}% - 10.5rem)` : `calc(${pct}% + 0.5rem)`;
+function rowLabel(row: ChartRow): string {
+  return `avg · ${formatTime(new Date(row.t))}–${formatTime(new Date(row.t + BUCKET_MS))}`;
 }
 
-function bucketWidth(): number {
-  return (BUCKET_MS / DAY_MS) * WIDTH;
+function rowFooter(row: ChartRow): string {
+  return row.failures > 0 ? `${row.failures} of ${row.checks} checks failed` : "";
 }
 
-<ResponseChart (
-  chart: Chart,
-  label: string,
-  private hover: Hover = { index: -1 },
-)>
-  <div class="chart">
-    <div class="chart-plot"
-         role="img"
-         aria-label={`Response time for ${label} over the last 24 hours`}
-         onpointermove={(e: PointerEvent) => onHover(e, hover, chart)}
-         onpointerleave={() => hover.index = -1}>
-      <div e:if={chart.buckets.length === 0} class="chart-empty">Waiting for the first check</div>
-      <svg e:else width="100%" height="120" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
-        <line class="chart-grid" x1="0" x2={WIDTH} y1={PAD_TOP} y2={PAD_TOP}/>
-        <line class="chart-grid" x1="0" x2={WIDTH} y1={(HEIGHT + PAD_TOP) / 2} y2={(HEIGHT + PAD_TOP) / 2}/>
-        <g e:for={bucket of chart.buckets.filter((b) => b.failures > 0)}>
-          <rect class="chart-fail" x={bucket.x - bucketWidth() / 2} y="0" width={bucketWidth()} height={HEIGHT}/>
-          <rect class="chart-fail-tick" x={bucket.x - bucketWidth() / 2} y={HEIGHT - 4} width={bucketWidth()} height="4"/>
-        </g>
-        <path class="chart-area" d={chart.area}/>
-        <path class="chart-line" d={chart.line}/>
-      </svg>
-      <span e:if={chart.buckets.length > 0} class="chart-ymax">{formatMs(chart.yMax)}</span>
-      <div e:if={hover.index >= 0 && chart.buckets[hover.index]}>
-        <div class="chart-crosshair" style={`left: ${(chart.buckets[hover.index].x / WIDTH) * 100}%`}/>
-        <div class="chart-tip" style={`left: ${tipLeft(chart.buckets[hover.index].x)}`}>
-          <strong>{formatMs(chart.buckets[hover.index].ms)}</strong>
-          <span>avg · {formatTime(new Date(chart.buckets[hover.index].t))}–{formatTime(new Date(chart.buckets[hover.index].t + BUCKET_MS))}</span>
-          <span e:if={chart.buckets[hover.index].failures > 0} class="is-fail" style="display: block">
-            {chart.buckets[hover.index].failures} of {chart.buckets[hover.index].checks} checks failed
-          </span>
-        </div>
-      </div>
-    </div>
-    <div class="chart-axis" aria-hidden="true">
-      <span>24h ago</span>
-      <span>12h ago</span>
-      <span>now</span>
-    </div>
-  </div>
+<ResponseChart (chart: Chart, label: string)>
+  <Empty e:if={chart.empty} variant="muted" description="Waiting for the first check" class="chart-waiting"/>
+  <AreaChart e:else
+             data={chart.rows}
+             {config}
+             x="slot"
+             series={["failed", "ms"]}
+             class="response-chart"
+             label={`Response time for ${label} over the last 24 hours`}
+             categoryAxis={{ ticks: [0, BUCKETS / 2, BUCKETS - 1], tickFormatter: (value: any) => slotLabel(Number(value)), tickLine: false, showAll: true }}
+             valueAxis={{ domain: [0, chart.yMax], ticks: [chart.yMax], tickFormatter: (value: any) => formatMs(Number(value)), mirror: true, tickLine: false, axisLine: false }}
+             tooltip={{
+               labelFormatter: (_label: any, row: any) => rowLabel(row as ChartRow),
+               formatter: (value: any) => formatMs(value as number | null),
+               footer: (row: any) => rowFooter(row as ChartRow),
+             }}/>
 </ResponseChart>
