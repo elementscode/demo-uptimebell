@@ -89,7 +89,7 @@ function rowFooter(row: ChartRow): string {
              series={["failed", "ms"]}
              class="response-chart"
              label={`Response time for ${label} over the last 24 hours`}
-             categoryAxis={{ ticks: [0, BUCKETS / 2, BUCKETS - 1], tickFormatter: (value: any) => slotLabel(Number(value)), tickLine: false, showAll: true }}
+             categoryAxis={{ ticks: [0, BUCKETS / 2, BUCKETS - 1], tickFormatter: (value: any) => slotLabel(Number(value)), tickLine: false }}
              valueAxis={{ domain: [0, chart.yMax], ticks: [chart.yMax], tickFormatter: (value: any) => formatMs(Number(value)), mirror: true, tickLine: false, axisLine: false }}
              tooltip={{
                labelFormatter: (_label: any, row: any) => rowLabel(row as ChartRow),
